@@ -1,0 +1,9 @@
+{
+    "C_Cpp.errorSquiggles": "Enabled",
+    "files.associations": {
+        "chrono": "cpp",
+        "iosfwd": "cpp",
+        "string": "cpp",
+        "*.tcc": "cpp"
+    }
+}

@@ -186,7 +186,15 @@ void decrypt(pcs_public_key *pK,pcs_private_key *prK,Mat pic0,Mat pic1,Mat pic2,
     t8.get();
     t9.get();
 }
+void mergeImage( vector<Mat> vectorOfRecovered,Mat decryptImage0,Mat decryptImage1,Mat decryptImage2,Mat &mergeImage){
+     
+        vectorOfRecovered.push_back(decryptImage0);
+        vectorOfRecovered.push_back(decryptImage1);
+        vectorOfRecovered.push_back(decryptImage2);
+    
 
+    merge(vectorOfRecovered,mergeImage);
+}
 int main(){
     Mat bgrImg1,bgrImg2,bgrImg3,rawImg;
     Mat imageComponent[6],encrptImage[6];
@@ -252,19 +260,18 @@ int main(){
 
     decrypt(pK,prK,encrptImage[0],encrptImage[1],encrptImage[2],encrptImage[3],encrptImage[4],encrptImage[5],decryptImage[0],decryptImage[1],decryptImage[2],quotesPart0,quotesPart1,quotesPart2,quotesPart3,quotesPart4,quotesPart5);
 
-    Mat finalResult;
+    Mat result;
     vector<Mat> vectorOfRecovered;
-    for (int i=0;i<3;i++)
-    {
-        vectorOfRecovered.push_back(decryptImage[i]);
-    }
+    auto start_decrypt = chrono::steady_clock::now();
 
-    merge(vectorOfRecovered,finalResult);
-    imwrite("RecoveredImage.jpg",finalResult);
-    auto end_decrypt = chrono::steady_clock::now();
+    cout<<"Start Decryption..."<<endl;
+    mergeImage(vectorOfRecovered,decryptImage[0],decryptImage[1],decryptImage[2],result);
+    imwrite("DecryptImage.jpg",result);
+    auto end_decrypt = chrono::steady_clock::now(); 
+   
 
     cout<<"Decryption time is: ";
-    // cout<<chrono::duration <double> (end_decrypt-start_decrypt).count() << "s" << endl;
+    cout<<chrono::duration <double> (end_decrypt-start_decrypt).count() << "s" << endl;
 
     pcs_free_private_key(prK);
     pcs_free_public_key(pK);

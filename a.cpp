@@ -6,13 +6,20 @@
 #include <sstream>
 
 using namespace std;
-void writeFile(string nameFile, pcs_private_key *prK,pcs_public_key *pK)
+void writePrKFile(string nameFile, pcs_private_key *prK)
 {
 
     ofstream myfile;
     myfile.open(nameFile);
     myfile << pcs_export_private_key(prK);
+
+    myfile.close();
+}
+void writePKFile(string nameFile,pcs_public_key *pK){
+    ofstream myfile;
+    myfile.open(nameFile);
     
+    myfile<<pcs_export_public_key(pK);
     myfile.close();
 }
 string readFile(string nameFile)
@@ -33,8 +40,13 @@ int main()
     hcs_random *hr = hcs_init_random();
     pcs_generate_key_pair(pK, prK, hr, 128);
     
-    writeFile("prk.json",prK);
-    writeFile("pk.json",pK);
+    writePrKFile("prk.json",prK);
+    writePKFile("pk.json",pK);
+
+    
     
     return 0;
 }
+
+
+
