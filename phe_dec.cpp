@@ -14,7 +14,7 @@ void importQT(string qt[]){
     }
 }
 
-void paillier_decryption(Mat img1, Mat img2, Mat &destinationMat, vector<string> quotes1, vector<string> quotes2, pcs_private_key *vk)
+void paillier_decryption(Mat img1, Mat img2, Mat &destinationMat, vector<string> quotes1, vector<string> quotes2, pcs_public_key *pk,pcs_private_key *vk)
 {
     int index = 0;
     for (int i = 0; i < destinationMat.rows; i++)
@@ -32,9 +32,11 @@ void paillier_decryption(Mat img1, Mat img2, Mat &destinationMat, vector<string>
             mpz_mul_ui(number2, number2, 257);
             mpz_add_ui(number1, number1, img1.at<uchar>(i, j));
             mpz_add_ui(number2, number2, img2.at<uchar>(i, j));
-            pcs_decrypt(vk,number1,number1);
-            pcs_decrypt(vk,number2,number2);
-            mpz_add(result, number1, number2);
+            pcs_ee_add(pk,result,number1,number2);
+
+            pcs_decrypt(vk,result,result);
+            
+            // mpz_add(result, number1, number2);
             unsigned long int recoveredValue = mpz_get_ui(result);
             destinationMat.at<uchar>(i, j) = recoveredValue;
             index++;
@@ -42,11 +44,11 @@ void paillier_decryption(Mat img1, Mat img2, Mat &destinationMat, vector<string>
 }
 
 
-void decrypt(pcs_private_key *vk, Mat pic [], Mat decryptImage [], vector<string> quotesPart[])
+void decrypt(pcs_public_key *pk,pcs_private_key *vk, Mat pic [], Mat decryptImage [], vector<string> quotesPart[])
 {
-    future<void> t7 = async(paillier_decryption, pic[0], pic[1], ref(decryptImage[0]), quotesPart[0], quotesPart[1], vk);
-    future<void> t8 = async(paillier_decryption, pic[2], pic[3], ref(decryptImage[1]), quotesPart[2], quotesPart[3], vk);
-    future<void> t9 = async(paillier_decryption, pic[4], pic[5], ref(decryptImage[2]), quotesPart[4], quotesPart[5], vk);
+    future<void> t7 = async(paillier_decryption, pic[0], pic[1], ref(decryptImage[0]), quotesPart[0], quotesPart[1], pk,vk);
+    future<void> t8 = async(paillier_decryption, pic[2], pic[3], ref(decryptImage[1]), quotesPart[2], quotesPart[3], pk,vk);
+    future<void> t9 = async(paillier_decryption, pic[4], pic[5], ref(decryptImage[2]), quotesPart[4], quotesPart[5], pk,vk);
 
     t7.get();
     t8.get();
@@ -67,9 +69,10 @@ void ReadImg(Mat pic [])
 
     string filePath = temp;
     filePath = filePath + "/tmp/";
+    cout<<"filepath:"<<filePath<<endl;
 
     for(int i = 0; i < 6 ; i++){
-        pic[i] = imread(filePath + "p" + to_string(i+1) + ".png");
+        pic[i] = imread(filePath + "p" + to_string(i+1) + ".png",0);
     }
 }
 
@@ -77,11 +80,14 @@ int main(){
     vector<string> quotesPart[6];
     Mat pic[6];string qt[6];
     pcs_private_key *vk = pcs_init_private_key();
-
+    pcs_public_key *pk=pcs_init_public_key();
     // IMPORT PUBKEY,PRIVATEKEY TO ENCRYPT IMAGE
     string x = readFile("key-private.json");
     const char * xx = x.c_str();
     pcs_import_private_key(vk,xx);
+    x=readFile("key-pub.json");
+    xx=x.c_str();
+    pcs_import_public_key(pk,xx);
 
     // Import quotion data from encryption image
     
@@ -98,6 +104,17 @@ int main(){
 
     Mat decryptImage[3];
     ReadImg(pic);
+    cout<<pic[0]<<endl;
+    // imwrite("imwrite.png",pic[0]);
+   
+    char * temp=get_current_dir_name();
+
+    // string filePath=temp;
+    // filePath=filePath+"/tmp/p1.png";
+    // cout<<"file path"<<filePath<<endl;
+    // Mat readEncrypt=imread(filePath);
+    // imwrite("readEncrypt.png",readEncrypt);
+
 
     decryptImage[0] = pic[0].clone();
     decryptImage[1] = pic[0].clone();
@@ -105,17 +122,18 @@ int main(){
 
 
     cout << "Start Decryption..." << endl;
-    decrypt(vk, pic, decryptImage, quotesPart);
+    auto start_decrypt = chrono::steady_clock::now();
+    decrypt(pk,vk, pic, decryptImage, quotesPart);
 
-    imwrite("1.png", decryptImage[0]);
-    imwrite("2.png", decryptImage[1]);
-    imwrite("3.png", decryptImage[2]);
+    // imwrite("1.png", decryptImage[0]);
+    // imwrite("2.png", decryptImage[1]);
+    // imwrite("3.png", decryptImage[2]);
 
     Mat result;
     vector<Mat> vectorOfRecovered;
 
     // Record time
-    auto start_decrypt = chrono::steady_clock::now();
+   
     cout << "Merge 3 RGB image to recovered image" << endl;
 
     mergeImage(vectorOfRecovered, decryptImage, result);

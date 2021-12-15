@@ -87,6 +87,8 @@ void paillier_encryption(Mat rawMat, Mat &destinationMat, pcs_public_key *pk, hc
     for (int i = 0; i < rawMat.rows; i++)
         for (int j = 0; j < rawMat.cols; j++)
         {
+            auto startEncryptOnePixel = chrono::steady_clock::now();
+
             while (true)
             {
                 bool break_flag = false;
@@ -113,6 +115,8 @@ void paillier_encryption(Mat rawMat, Mat &destinationMat, pcs_public_key *pk, hc
                 if (break_flag == true)
                     break;
             }
+             auto endEncryptOnePixel = chrono::steady_clock::now();
+            cout << chrono::duration <double> (endEncryptOnePixel-startEncryptOnePixel).count() << "s" << endl;
         }
 }
 
